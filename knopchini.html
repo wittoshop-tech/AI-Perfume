@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini для кнопочного</title>
+</head>
+<body>
+
+    <h3>Gemini AI</h3>
+
+    <!-- ВСТАВЬТЕ СЮДА ВАШ API-КЛЮЧ -->
+    <input type="hidden" id="apiKey" value="AQ.Ab8RN6IsLUvsdNcVPzA1Im7ribUQslokf50ElNwJKFpeUshcww">
+
+    <!-- Актуальные модели -->
+    <label for="model">Модель:</label><br>
+    <select id="model">
+        <option value="gemini-3.8-flash" selected>gemini-3.8-flash (быстрая)</option>
+        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (легкая)</option>
+    </select>
+    <br><br>
+
+    <!-- Поле для ввода вопроса -->
+    <label for="prompt">Вопрос:</label><br>
+    <textarea id="prompt" rows="5" cols="22"></textarea>
+    <br><br>
+
+    <button type="button" id="sendBtn" onclick="askGemini()">Спросить</button>
+    <hr>
+
+    <b>Статус:</b> <span id="status">Готов</span><br><br>
+    <b>Ответ:</b>
+    <div id="result"><i>Здесь будет текст ответа</i></div>
+
+    <script>
+        function askGemini() {
+            var apiKey = document.getElementById('apiKey').value.trim();
+            var model = document.getElementById('model').value;
+            var prompt = document.getElementById('prompt').value.trim();
+            var status = document.getElementById('status');
+            var result = document.getElementById('result');
+            var sendBtn = document.getElementById('sendBtn');
+
+            if (apiKey === "ВСТАВЬТЕ_СЮДА_ВАШ_КЛЮЧ" || apiKey === "") {
+                alert("Ошибка: Сначала вставьте ваш API-ключ в строку 13!");
+                return;
+            }
+
+            if (!prompt) {
+                alert("Напишите вопрос!");
+                return;
+            }
+
+            sendBtn.disabled = true;
+            status.textContent = "Загрузка... Ждите";
+            result.textContent = "";
+
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/" 
+                      + model 
+                      + ":generateContent?key=" 
+                      + apiKey;
+
+            var data = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    sendBtn.disabled = false;
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            var text = response.candidates[0].content.parts[0].text;
+                            status.textContent = "Готово";
+                            result.innerHTML = '<pre style="white-space: pre-wrap; font-family: inherit;">' + text + '</pre>';
+                        } catch (e) {
+                            status.textContent = "Ошибка чтения";
+                            result.textContent = "Не удалось обработать ответ.";
+                        }
+                    } else {
+                        status.textContent = "Ошибка " + xhr.status;
+                        result.textContent = xhr.responseText;
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                sendBtn.disabled = false;
+                status.textContent = "Ошибка сети";
+                result.textContent = "Проверьте интернет.";
+            };
+
+            xhr.send(JSON.stringify(data));
+        }
+    </script>
+</body>
+</html>
